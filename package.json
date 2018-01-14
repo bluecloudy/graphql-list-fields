@@ -1,0 +1,44 @@
+{
+  "name": "graphql-list-fields",
+  "version": "2.0.0",
+  "description": "Get a list of fields while resolving a GraphQL query",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "coverage": "jest --coverage",
+    "test-ci": "npm run coverage && cat ./coverage/lcov.info | coveralls",
+    "test-watch": "jest --watch",
+    "test-all": "jest --watchAll"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jakepusateri/graphql-list-fields.git"
+  },
+  "author": "jakepusateri",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jakepusateri/graphql-list-fields/issues"
+  },
+  "homepage": "https://github.com/jakepusateri/graphql-list-fields#readme",
+  "keywords": [
+    "ast",
+    "schema",
+    "fields",
+    "graphqlresolveinfo",
+    "graphql-js",
+    "graphql"
+  ],
+  "devDependencies": {
+    "@babel/core": "^7.0.0-beta.37",
+    "babel-core": "^7.0.0-0",
+    "babel-jest": "^22.0.6",
+    "babel-preset-env": "^1.6.1",
+    "coveralls": "^3.0.0",
+    "graphql": "^0.11.7",
+    "graphql-tools": "^2.18.0",
+    "jest": "^22.0.6",
+    "regenerator-runtime": "^0.11.1"
+  },
+  "files": [],
+  "dependencies": {}
+}
