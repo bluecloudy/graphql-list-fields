@@ -106,10 +106,12 @@ function getFieldSelectionSet(context, asts = context.fieldASTs || context.field
 
                 // We need to find the real type name
                 let typeName = targetType.name;
+                let kind = astType.toString().startsWith('[') ? 'LIST' : 'ONE';
 
-                // Small hack for relay connection
-                if (typeName.endsWith('Connection')) {
-                    typeName = targetType.getFields()['edges'].type.ofType.getFields().node.type.name;
+                // FIXME: Small hack for relay connection
+                if (astType.toString().endsWith('Connection')) {
+                    typeName = typeName.replace('Connection', '');
+                    kind = 'CONNECTION';
                 }
 
                 // User blank type name for interface
@@ -125,7 +127,7 @@ function getFieldSelectionSet(context, asts = context.fieldASTs || context.field
                 set[ast.name.value] = {
                     __name: ast.name.value,
                     __type: typeName,
-                    __kind: astType.toString().startsWith('[') ? 'LIST' : 'ONE',
+                    __kind: kind,
                     __args: args,
                     __fields: {},
                     __directives: findDirective(ast, schemaType), // Find directives
