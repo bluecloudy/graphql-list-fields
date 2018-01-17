@@ -79,6 +79,10 @@ function getFieldSelectionSet(context, asts = context.fieldASTs || context.field
     const node = (context.returnType.ofType || context.returnType).toString();
     // Get root type of not exist
     schemaType = schemaType || context.schema.getType(node);
+    // Handle InlineFragment - interface
+    if(schemaType.astNode.kind === 'InterfaceTypeDefinition' && asts.typeCondition){
+        schemaType = context.schema.getType(asts.typeCondition.name.value);
+    }
     // Get query vairable values
     const variableValues = context.variableValues;
     // for recursion: fragments doesn't have many sets
@@ -95,11 +99,11 @@ function getFieldSelectionSet(context, asts = context.fieldASTs || context.field
         if (isExcludedByDirective(context, ast)) {
             return set;
         }
-        if (!schemaType.getFields()[ast.name.value]) {
-            return set;
-        }
         switch (ast.kind) {
             case 'Field':
+                if (!schemaType.getFields()[ast.name.value]) {
+                    return set;
+                }
                 // Current schema type
                 const astType = schemaType.getFields()[ast.name.value].type;
                 const targetType = astType.ofType || astType;
