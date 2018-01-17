@@ -74,7 +74,7 @@ function getFieldSet(context, asts = context.fieldASTs || context.fieldNodes, pr
     }, {});
 }
 
-function getFieldSetWithDirective(context, asts = context.fieldASTs || context.fieldNodes, schemaType = null) {
+function getFieldSelectionSet(context, asts = context.fieldASTs || context.fieldNodes, schemaType = null) {
     // Root node name
     const node = (context.returnType.ofType || context.returnType).toString();
     // Get root type of not exist
@@ -95,56 +95,51 @@ function getFieldSetWithDirective(context, asts = context.fieldASTs || context.f
         if (isExcludedByDirective(context, ast)) {
             return set;
         }
+        if (!schemaType.getFields()[ast.name.value]) {
+            return set;
+        }
         switch (ast.kind) {
             case 'Field':
-                if (ast.selectionSet) {
-                    if (!schemaType.getFields()[ast.name.value]) {
-                        return set;
-                    }
+                // Current schema type
+                const astType = schemaType.getFields()[ast.name.value].type;
+                const targetType = astType.ofType || astType;
 
-                    // Current schema type
-                    const astType = schemaType.getFields()[ast.name.value].type;
-                    const targetType = astType.ofType || astType;
+                // We need to find the real type name
+                let typeName = targetType.name;
 
-                    // We need to find the real type name
-                    let typeName = targetType.name;
-
-                    // Small hack for relay connection
-                    if (typeName.endsWith('Connection')) {
-                        typeName = targetType.getFields()['edges'].type.ofType.getFields().node.type.name;
-                    }
-
-                    // Child query params
-                    const args = ast.arguments.reduce((obj, argument) => {
-                        obj[argument.name.value] = argument.value.value || variableValues[argument.name.value] || null;
-                        return obj;
-                    }, {});
-
-                    // User blank type name for interface
-                    typeName = targetType.astNode.kind === 'InterfaceTypeDefinition' ? '' : typeName;
-
-                    // Basic field value
-                    set[ast.name.value] = {
-                        __name: ast.name.value,
-                        __type: typeName,
-                        __kind: astType.toString().startsWith('[') ? 'LIST' : 'ONE',
-                        __args: args,
-                        __fields: getFieldSetWithDirective(context, ast, targetType),
-                        __directives: findDirective(ast, schemaType),
-                    };
-                    
-                    return set;
-                } else {
-                    set[ast.name.value] = {
-                        __name: ast.name.value,
-                        __directives: findDirective(ast, schemaType),
-                    };
-                    return set;
+                // Small hack for relay connection
+                if (typeName.endsWith('Connection')) {
+                    typeName = targetType.getFields()['edges'].type.ofType.getFields().node.type.name;
                 }
+
+                // User blank type name for interface
+                typeName = targetType.astNode && targetType.astNode.kind === 'InterfaceTypeDefinition' ? '' : typeName;
+
+                // Child query params
+                const args = ast.arguments.reduce((obj, argument) => {
+                    obj[argument.name.value] = argument.value.value || variableValues[argument.name.value] || null;
+                    return obj;
+                }, {});
+
+                // Basic field value
+                set[ast.name.value] = {
+                    __name: ast.name.value,
+                    __type: typeName,
+                    __kind: astType.toString().startsWith('[') ? 'LIST' : 'ONE',
+                    __args: args,
+                    __fields: {},
+                    __directives: findDirective(ast, schemaType), // Find directives
+                };
+
+                if (ast.selectionSet) {
+                    set[ast.name.value].__fields = getFieldSelectionSet(context, ast, targetType);
+                }
+
+                return set;
             case 'InlineFragment':
-                return Object.assign({}, set, getFieldSetWithDirective(context, ast, schemaType));
+                return Object.assign({}, set, getFieldSelectionSet(context, ast, schemaType));
             case 'FragmentSpread':
-                return Object.assign({}, set, getFieldSetWithDirective(context, context.fragments[ast.name.value], schemaType));
+                return Object.assign({}, set, getFieldSelectionSet(context, context.fragments[ast.name.value], schemaType));
         }
     }, {});
 }
@@ -153,7 +148,7 @@ module.exports = {
     getFieldList: (context) => {
         return Object.keys(getFieldSet(context));
     },
-    getFieldListWithDirective: (context) => {
-        return getFieldSetWithDirective(context);
+    getFieldSelection: (context) => {
+        return getFieldSelectionSet(context);
     }
 };

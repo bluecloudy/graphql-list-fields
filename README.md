@@ -18,12 +18,71 @@ npm install --save graphql-list-fields
 ```
 
 ## Usage
+#### Nested fields into dot.notation
 ```javascript
-import getFieldNames from 'graphql-list-fields';
+import { getFieldList } from 'graphql-list-fields';
 
 // in some resolve function
 resolve(parent, args, context, info) {
-    const fields = getFieldNames(info);
+    const fields = getFieldList(info);
     return fetch('/someservice/?fields=' + fields.join(','));
+}
+```
+
+#### Get all nested into object
+```javascript
+import { getFieldSelection } from 'graphql-list-fields';
+
+// in some resolve function
+resolve(parent, args, context, info) {
+    const fields = getFieldSelection(info);
+    console.log(fields);
+    return 'something';
+}
+```
+#### Example: 
+GraphQL:
+```
+{
+    Movie {
+        title
+        actors {
+            id
+        }
+    }
+}
+```
+Result: 
+```javascript
+{
+    title: {
+        __args: {}, 
+        __directives: {}, 
+        __kind: "ONE", 
+        __name: "title", 
+        __type: "String",
+        __fields: {}
+    },
+    actors: {
+        __args: {}, 
+        __directives: {
+            relation: {
+                direction: "IN", name: "ACTED_IN"
+            }
+        }, 
+        __kind: "LIST", 
+        __name: "actors", 
+        __type: "Actor",
+        __fields: {
+            id: {
+                __args: {}, 
+                __directives: {}, 
+                __kind: "ONE", 
+                __name: "id", 
+                __type: "ID",
+                __fields: {}
+            },
+        }
+    }
 }
 ```
