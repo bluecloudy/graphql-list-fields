@@ -29,7 +29,7 @@ resolve(parent, args, context, info) {
 }
 ```
 
-#### Get all nested into object
+#### Nested fields into object
 ```javascript
 import { getFieldSelection } from 'graphql-list-fields';
 
