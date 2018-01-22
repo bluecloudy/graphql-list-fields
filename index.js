@@ -82,8 +82,8 @@ function findDirective(fieldName, parentType) {
 
 function getField(context, ast, parentType) {
 	// Handle InlineFragment - interface
-	if (parentType.astNode.kind === 'InterfaceTypeDefinition' && asts.typeCondition) {
-		parentType = context.schema.getType(asts.typeCondition.name.value);
+	if (parentType.astNode.kind === 'InterfaceTypeDefinition' && ast.typeCondition) {
+		parentType = context.schema.getType(ast.typeCondition.name.value);
 	}
 	// Get query vairable values
 	const variableValues = context.variableValues;
