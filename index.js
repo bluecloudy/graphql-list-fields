@@ -1,160 +1,171 @@
 function getBooleanArgumentValue(context, ast) {
-    const argument = ast.arguments[0].value;
-    switch (argument.kind) {
-        case 'BooleanValue':
-            return argument.value;
-        case 'Variable':
-            return context.variableValues[argument.name.value];
-    }
+	const argument = ast.arguments[0].value;
+	switch (argument.kind) {
+		case 'BooleanValue':
+			return argument.value;
+		case 'Variable':
+			return context.variableValues[argument.name.value];
+	}
 }
 
 function isExcludedByDirective(context, ast) {
-    const directives = ast.directives;
-    let isExcluded = false;
-    directives.forEach((directive) => {
-        switch (directive.name.value) {
-            case 'include':
-                isExcluded = isExcluded || !getBooleanArgumentValue(context, directive);
-                break;
-            case 'skip':
-                isExcluded = isExcluded || getBooleanArgumentValue(context, directive);
-                break;
-        }
-    });
-    return isExcluded;
+	const directives = ast.directives;
+	let isExcluded = false;
+	directives.forEach((directive) => {
+		switch (directive.name.value) {
+			case 'include':
+				isExcluded = isExcluded || !getBooleanArgumentValue(context, directive);
+				break;
+			case 'skip':
+				isExcluded = isExcluded || getBooleanArgumentValue(context, directive);
+				break;
+		}
+	});
+	return isExcluded;
 }
 
 function dotConcat(a, b) {
-    return a ? `${a}.${b}` : b;
-}
-
-function findDirective(ast, schemaType) {
-    const directives = {};
-    schemaType.getFields()[ast.name.value].astNode.directives.forEach((directive) => {
-        // Directive options
-        const options = directive.arguments.reduce((obj, argument) => {
-            obj[argument.name.value] = argument.value.value;
-            return obj;
-        }, {});
-        // Add to directive list
-        directives[directive.name.value] = options;
-    });
-    return directives;
+	return a ? `${a}.${b}` : b;
 }
 
 function getFieldSet(context, asts = context.fieldASTs || context.fieldNodes, prefix = '') {
-    // for recursion: fragments doesn't have many sets
-    if (!Array.isArray(asts)) {
-        asts = [asts];
-    }
+	// for recursion: fragments doesn't have many sets
+	if (!Array.isArray(asts)) {
+		asts = [asts];
+	}
 
-    const selections = asts.reduce((selections, source) => {
-        selections.push(...source.selectionSet.selections);
-        return selections;
-    }, []);
+	const selections = asts.reduce((selections, source) => {
+		selections.push(...source.selectionSet.selections);
+		return selections;
+	}, []);
 
-    return selections.reduce((set, ast) => {
-        if (isExcludedByDirective(context, ast)) {
-            return set;
-        }
-        switch (ast.kind) {
-            case 'Field':
-                const newPrefix = dotConcat(prefix, ast.name.value);
-                if (ast.selectionSet) {
-                    return Object.assign({}, set, getFieldSet(context, ast, newPrefix));
-                } else {
-                    set[newPrefix] = true;
-                    return set;
-                }
-            case 'InlineFragment':
-                return Object.assign({}, set, getFieldSet(context, ast, prefix));
-            case 'FragmentSpread':
-                return Object.assign({}, set, getFieldSet(context, context.fragments[ast.name.value], prefix));
-        }
-    }, {});
+	return selections.reduce((set, ast) => {
+		if (isExcludedByDirective(context, ast)) {
+			return set;
+		}
+		switch (ast.kind) {
+			case 'Field':
+				const newPrefix = dotConcat(prefix, ast.name.value);
+				if (ast.selectionSet) {
+					return Object.assign({}, set, getFieldSet(context, ast, newPrefix));
+				} else {
+					set[newPrefix] = true;
+					return set;
+				}
+			case 'InlineFragment':
+				return Object.assign({}, set, getFieldSet(context, ast, prefix));
+			case 'FragmentSpread':
+				return Object.assign({}, set, getFieldSet(context, context.fragments[ast.name.value], prefix));
+		}
+	}, {});
 }
 
-function getFieldSelectionSet(context, asts = context.fieldASTs || context.fieldNodes, schemaType = null) {
-    // Root node name
-    const node = (context.returnType.ofType || context.returnType).toString();
-    // Get root type of not exist
-    schemaType = schemaType || context.schema.getType(node);
-    // Handle InlineFragment - interface
-    if(schemaType.astNode.kind === 'InterfaceTypeDefinition' && asts.typeCondition){
-        schemaType = context.schema.getType(asts.typeCondition.name.value);
-    }
-    // Get query vairable values
-    const variableValues = context.variableValues;
-    // for recursion: fragments doesn't have many sets
-    if (!Array.isArray(asts)) {
-        asts = [asts];
-    }
+function getDirectiveArguments(args) {
+	return args.reduce((obj, argument) => {
+		if (argument.value.fields) {
+			obj[argument.name.value] = getDirectiveArguments(argument.value.fields);
+		} else {
+			obj[argument.name.value] = argument.value.value;
+		}
+		return obj;
+	}, {});
+}
 
-    const selections = asts.reduce((selections, source) => {
-        selections.push(...source.selectionSet.selections);
-        return selections;
-    }, []);
+function findDirective(fieldName, parentType) {
+	const directives = {};
+	parentType.getFields()[fieldName].astNode.directives.forEach((directive) => {
+		// Add to directive list
+		directives[directive.name.value] = getDirectiveArguments(directive.arguments);
+	});
+	return directives;
+}
 
-    return selections.reduce((set, ast) => {
-        if (isExcludedByDirective(context, ast)) {
-            return set;
-        }
-        switch (ast.kind) {
-            case 'Field':
-                if (!schemaType.getFields()[ast.name.value]) {
-                    return set;
-                }
-                // Current schema type
-                const astType = schemaType.getFields()[ast.name.value].type;
-                const targetType = astType.ofType || astType;
+function getField(context, ast, parentType) {
+	// Handle InlineFragment - interface
+	if (parentType.astNode.kind === 'InterfaceTypeDefinition' && asts.typeCondition) {
+		parentType = context.schema.getType(asts.typeCondition.name.value);
+	}
+	// Get query vairable values
+	const variableValues = context.variableValues;
 
-                // We need to find the real type name
-                let typeName = targetType.name;
-                let kind = astType.toString().startsWith('[') ? 'LIST' : 'ONE';
+	// Current schema type
+	const astType = parentType.getFields()[ast.name.value].type;
+	const targetType = astType.ofType || astType;
 
-                // FIXME: Small hack for relay connection
-                if (astType.toString().endsWith('Connection')) {
-                    typeName = typeName.replace('Connection', '');
-                    kind = 'CONNECTION';
-                }
+	// We need to find the real type name
+	let typeName = targetType.name;
+	let kind = astType.toString().startsWith('[') ? 'LIST' : 'ONE';
 
-                // User blank type name for interface
-                typeName = targetType.astNode && targetType.astNode.kind === 'InterfaceTypeDefinition' ? '' : typeName;
+	// FIXME: Small hack for relay connection
+	if (astType.toString().endsWith('Connection')) {
+		typeName = typeName.replace('Connection', '');
+		kind = 'CONNECTION';
+	}
 
-                // Child query params
-                const args = ast.arguments.reduce((obj, argument) => {
-                    obj[argument.name.value] = argument.value.value || variableValues[argument.name.value] || null;
-                    return obj;
-                }, {});
+	// User blank type name for interface
+	typeName = targetType.astNode && targetType.astNode.kind === 'InterfaceTypeDefinition' ? '' : typeName;
 
-                // Basic field value
-                set[ast.name.value] = {
-                    __name: ast.name.value,
-                    __type: typeName,
-                    __kind: kind,
-                    __args: args,
-                    __fields: {},
-                    __directives: findDirective(ast, schemaType), // Find directives
-                };
+	// Child query params
+	const args = ast.arguments.reduce((obj, argument) => {
+		obj[argument.name.value] = (argument.value && argument.value.value) || (argument.defaultValue && argument.defaultValue.value) || variableValues[argument.name.value] || null;
+		return obj;
+	}, {});
 
-                if (ast.selectionSet) {
-                    set[ast.name.value].__fields = getFieldSelectionSet(context, ast, targetType);
-                }
+	return {
+		__name: ast.name.value,
+		__type: typeName,
+		__kind: kind,
+		__args: args,
+		__fields: ast.selectionSet ? getFieldSelectionSet(context, ast, targetType) : {},
+		__directives: findDirective(ast.name.value, parentType), // Find directives
+	};
+}
 
-                return set;
-            case 'InlineFragment':
-                return Object.assign({}, set, getFieldSelectionSet(context, ast, schemaType));
-            case 'FragmentSpread':
-                return Object.assign({}, set, getFieldSelectionSet(context, context.fragments[ast.name.value], schemaType));
-        }
-    }, {});
+function getFieldSelectionSet(context, asts = context.fieldASTs || context.fieldNodes, parentType = null) {
+	// Root node name
+	const node = (context.returnType.ofType || context.returnType).toString();
+	// Get root type of not exist
+	parentType = parentType || context.schema.getType(node);
+
+	// for recursion: fragments doesn't have many sets
+	if (!Array.isArray(asts)) {
+		asts = [asts];
+	}
+
+	const selections = asts.reduce((selections, source) => {
+		selections.push(...source.selectionSet.selections);
+		return selections;
+	}, []);
+
+	return selections.reduce((set, ast) => {
+		if (isExcludedByDirective(context, ast)) {
+			return set;
+		}
+		switch (ast.kind) {
+			case 'Field':
+				if (!parentType.getFields()[ast.name.value]) {
+					return set;
+				}
+				return {
+					...set,
+					[ast.name.value]: getField(context, ast, parentType)
+				};
+			case 'InlineFragment':
+				return Object.assign({}, set, getFieldSelectionSet(context, ast, parentType));
+			case 'FragmentSpread':
+				return Object.assign({}, set, getFieldSelectionSet(context, context.fragments[ast.name.value], parentType));
+		}
+	}, {});
 }
 
 module.exports = {
-    getFieldList: (context) => {
-        return Object.keys(getFieldSet(context));
-    },
-    getFieldSelection: (context) => {
-        return getFieldSelectionSet(context);
-    }
+	getFieldList: (context) => {
+		return Object.keys(getFieldSet(context));
+	},
+	getFieldSelection: (context) => {
+		return getFieldSelectionSet(context);
+	},
+	getField: (context, ast, parentType) => {
+		return getField(context, ast, parentType);
+	}
 };
