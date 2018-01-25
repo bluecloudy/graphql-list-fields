@@ -1,7 +1,7 @@
 import { makeExecutableSchema } from 'graphql-tools';
 import { graphql, GraphQLSchema, GraphQLString, GraphQLObjectType, buildSchema } from 'graphql';
 import { Parser, Printer } from 'graphql/language';
-import { getFieldList } from '../';
+import { getFieldList } from '../src';
 
 function testGetFields(query, expected, variables) {
     return Promise.resolve().then(() => {    

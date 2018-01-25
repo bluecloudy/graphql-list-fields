@@ -16,7 +16,7 @@ import {
 import {
     getFieldSelection,
     getFieldList
-} from '../';
+} from '../src';
 
 function testGetFieldSelection(query, expected, variables) {
     return Promise.resolve().then(() => {

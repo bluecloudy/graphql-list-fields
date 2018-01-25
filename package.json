@@ -2,8 +2,9 @@
   "name": "graphql-list-fields",
   "version": "2.0.0",
   "description": "Get a list of fields while resolving a GraphQL query",
-  "main": "index.js",
+  "main": "lib/index.js",
   "scripts": {
+    "build": "babel src/index.js -o lib/index.js",
     "test": "jest",
     "coverage": "jest --coverage",
     "test-ci": "npm run coverage && cat ./coverage/lcov.info | coveralls",
@@ -29,10 +30,13 @@
     "graphql"
   ],
   "devDependencies": {
-    "@babel/core": "^7.0.0-beta.37",
+    "@babel/cli": "^7.0.0-beta.38",
+    "@babel/core": "^7.0.0-beta.38",
+    "@babel/node": "^7.0.0-beta.38",
+    "@babel/plugin-proposal-object-rest-spread": "^7.0.0-beta.38",
+    "@babel/preset-env": "^7.0.0-beta.38",
     "babel-core": "^7.0.0-0",
-    "babel-jest": "^22.0.6",
-    "babel-preset-env": "^1.6.1",
+    "babel-jest": "^22.1.0",
     "coveralls": "^3.0.0",
     "graphql": "^0.11.7",
     "graphql-tools": "^2.18.0",
