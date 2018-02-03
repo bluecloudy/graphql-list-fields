@@ -126,6 +126,10 @@ function getFieldSelectionSet(context, asts = context.fieldASTs || context.field
 	const node = (context.returnType.ofType || context.returnType).toString();
 	// Get root type of not exist
 	parentType = parentType || context.schema.getType(node);
+	// Handle InlineFragment - interface
+	if (parentType.astNode.kind === 'InterfaceTypeDefinition' && asts.typeCondition) {
+		parentType = context.schema.getType(asts.typeCondition.name.value);
+	}
 
 	// for recursion: fragments doesn't have many sets
 	if (!Array.isArray(asts)) {
