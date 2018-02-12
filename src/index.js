@@ -116,6 +116,7 @@ function getField(context, ast, parentType) {
 
     return {
         __name: ast.name.value,
+        __alias: ast.alias && ast.alias.value,
         __type: typeName,
         __kind: kind,
         __args: { ...defaultArgs, ...args },
@@ -155,7 +156,7 @@ function getFieldSelectionSet(context, asts = context.fieldASTs || context.field
                 }
                 return {
                     ...set,
-                    [ast.name.value]: getField(context, ast, parentType)
+                    [ast.alias ? ast.alias.value : ast.name.value]: getField(context, ast, parentType)
                 };
             case 'InlineFragment':
                 return Object.assign({}, set, getFieldSelectionSet(context, ast, parentType));
