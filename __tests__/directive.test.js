@@ -42,6 +42,7 @@ function testGetFieldSelection(query, expected, variables) {
         const resolverSpy = jest.fn(resolver);
 
         const resolvers = {
+            Movie: {},
             Query: {
                 Movie: resolverSpy,
                 allMovie: resolverSpy,
@@ -55,6 +56,9 @@ function testGetFieldSelection(query, expected, variables) {
         };
 
         const typeDefs = `
+            directive  @relation(name: String, direction: String) on FIELD
+            directive  @cypher(statement: String) on FIELD | OBJECT
+
 			scalar Cursor
 
 			type Movie {
@@ -140,7 +144,11 @@ it('basic query', () => {
 		}
 	}`, {
         "actors": {
-            "__args": {},
+            "__alias": undefined,
+            "__args": {
+                "first": 3,
+                "skip": 0
+            },
             "__directives": {
                 "relation": {
                     "direction": "IN",
@@ -149,20 +157,27 @@ it('basic query', () => {
             },
             "__fields": {
                 "id": {
+                    "__alias": undefined,
                     "__args": {},
                     "__directives": {},
                     "__fields": {},
                     "__kind": "ONE",
                     "__name": "id",
+                    "__resolve": undefined,
                     "__type": "ID"
                 }
             },
             "__kind": "LIST",
             "__name": "actors",
+            "__resolve": undefined,
             "__type": "Actor"
         },
         "allActor": {
-            "__args": {},
+            "__alias": undefined,
+            "__args": {
+                "first": 3,
+                "skip": 0
+            },
             "__directives": {
                 "relation": {
                     "direction": "IN",
@@ -171,53 +186,65 @@ it('basic query', () => {
             },
             "__fields": {
                 "count": {
+                    "__alias": undefined,
                     "__args": {},
                     "__directives": {},
                     "__fields": {},
                     "__kind": "ONE",
                     "__name": "count",
+                    "__resolve": undefined,
                     "__type": "Int"
                 },
                 "edges": {
+                    "__alias": undefined,
                     "__args": {},
                     "__directives": {},
                     "__fields": {
                         "cursor": {
+                            "__alias": undefined,
                             "__args": {},
                             "__directives": {},
                             "__fields": {},
                             "__kind": "ONE",
                             "__name": "cursor",
+                            "__resolve": undefined,
                             "__type": "Cursor"
                         },
                         "node": {
+                            "__alias": undefined,
                             "__args": {},
                             "__directives": {},
                             "__fields": {
                                 "id": {
+                                    "__alias": undefined,
                                     "__args": {},
                                     "__directives": {},
                                     "__fields": {},
                                     "__kind": "ONE",
                                     "__name": "id",
+                                    "__resolve": undefined,
                                     "__type": "ID"
                                 }
                             },
                             "__kind": "ONE",
                             "__name": "node",
+                            "__resolve": undefined,
                             "__type": "Actor"
                         }
                     },
                     "__kind": "LIST",
                     "__name": "edges",
+                    "__resolve": undefined,
                     "__type": "ActorEdge"
                 }
             },
             "__kind": "CONNECTION",
             "__name": "allActor",
+            "__resolve": undefined,
             "__type": "Actor"
         },
         "degree": {
+            "__alias": undefined,
             "__args": {},
             "__directives": {
                 "cypher": {
@@ -227,18 +254,25 @@ it('basic query', () => {
             "__fields": {},
             "__kind": "ONE",
             "__name": "degree",
+            "__resolve": undefined,
             "__type": "Int"
         },
         "imdbRating": {
+            "__alias": undefined,
             "__args": {},
             "__directives": {},
             "__fields": {},
             "__kind": "ONE",
             "__name": "imdbRating",
+            "__resolve": undefined,
             "__type": "Float"
         },
         "similar": {
-            "__args": {},
+            "__alias": undefined,
+            "__args": {
+                "first": 3,
+                "skip": 0
+            },
             "__directives": {
                 "cypher": {
                     "statement": "MATCH (this)-[:IN_GENRE]->(:Genre)<-[:IN_GENRE]-(o:Movie) RETURN o"
@@ -246,32 +280,39 @@ it('basic query', () => {
             },
             "__fields": {
                 "movieId": {
+                    "__alias": undefined,
                     "__args": {},
                     "__directives": {},
                     "__fields": {},
                     "__kind": "ONE",
                     "__name": "movieId",
+                    "__resolve": undefined,
                     "__type": "ID"
                 }
             },
             "__kind": "LIST",
             "__name": "similar",
+            "__resolve": undefined,
             "__type": "Movie"
         },
         "title": {
+            "__alias": undefined,
             "__args": {},
             "__directives": {},
             "__fields": {},
             "__kind": "ONE",
             "__name": "title",
+            "__resolve": undefined,
             "__type": "String"
         },
         "year": {
+            "__alias": undefined,
             "__args": {},
             "__directives": {},
             "__fields": {},
             "__kind": "ONE",
             "__name": "year",
+            "__resolve": undefined,
             "__type": "Int"
         }
     });

@@ -1,3 +1,5 @@
+import { getArgumentValues, defaultFieldResolver } from 'graphql/execution/values';
+
 function getBooleanArgumentValue(context, ast) {
     const argument = ast.arguments[0].value;
     switch (argument.kind) {
@@ -60,29 +62,15 @@ function getFieldSet(context, asts = context.fieldASTs || context.fieldNodes, pr
     }, {});
 }
 
-function getFieldArguments(args) {
-    return args.filter(arg => (arg.value || arg.defaultValue)).reduce((obj, argument) => {
-        obj[argument.name] = argument.value || argument.defaultValue;
-        return obj;
-    }, {});
-}
-
-function getArguments(args, variableValues = {}) {
-    return args.reduce((obj, argument) => {
-        if (argument.value.fields) {
-            obj[argument.name.value] = getArguments(argument.value.fields);
-        } else {
-            obj[argument.name.value] = argument.value && argument.value.value || variableValues[argument.name.value] || argument.defaultValue && argument.defaultValue.value || null;
-        }
-        return obj;
-    }, {});
-}
-
-function findDirective(fieldName, parentType) {
+function findDirective(fieldName, parentType, resolvelInfo) {
     const directives = {};
     parentType.getFields()[fieldName].astNode.directives.forEach((directive) => {
-        // Add to directive list
-        directives[directive.name.value] = getArguments(directive.arguments);
+        const directiveName = directive.name.value;
+        const def = resolvelInfo.schema.getDirective(directiveName);
+        if (typeof def === 'undefined') {
+            throw new Error(`Directive @${directiveName} is undefined. Please define in schema before using`);
+        }
+        directives[directiveName] = getArgumentValues(def, directive);
     });
     return directives;
 }
@@ -94,8 +82,8 @@ function getField(context, ast, parentType) {
     }
 
     // Current schema type
-    const astType = parentType.getFields()[ast.name.value].type;
-    const defaultArgs = getFieldArguments(parentType.getFields()[ast.name.value].args);
+    const field = parentType.getFields()[ast.name.value];
+    const astType = field.type;
     const targetType = astType.ofType || astType;
 
     // We need to find the real type name
@@ -112,16 +100,17 @@ function getField(context, ast, parentType) {
     typeName = targetType.astNode && targetType.astNode.kind === 'InterfaceTypeDefinition' ? '' : typeName;
 
     // Query params
-    const args = getArguments(ast.arguments, context.variableValues);
+    const args = getArgumentValues(field, ast);
 
     return {
         __name: ast.name.value,
-        __alias: ast.alias && ast.alias.value,
+        __alias: ast.alias ? ast.alias.value : undefined,
+        __resolve: field.resolve || defaultFieldResolver,
         __type: typeName,
         __kind: kind,
-        __args: { ...defaultArgs, ...args },
+        __args: args,
         __fields: ast.selectionSet ? getFieldSelectionSet(context, ast, targetType) : {},
-        __directives: findDirective(ast.name.value, parentType), // Find directives
+        __directives: findDirective(ast.name.value, parentType, context), // Find directives
     };
 }
 
